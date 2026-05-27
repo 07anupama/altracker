@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL Past Paper Tracker</title>
+    <!-- Dynamic Favicon using SVG -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    
+    <!-- Tailwind CSS for smooth & modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for smooth animations and beautiful graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+        }
+        /* 3D Model Styling */
+        .scene {
+            width: 140px;
+            height: 180px;
+            perspective: 600px;
+        }
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateY(-20px) rotateX(15deg);
+            transition: transform 0.5s ease-out;
+            animation: float 4s ease-in-out infinite;
+        }
+        .scene:hover .cube {
+            transform: rotateY(20deg) rotateX(10deg) scale(1.05);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotateY(-15deg) rotateX(10deg); }
+            50% { transform: translateY(-10px) rotateY(-20deg) rotateX(15deg); }
+        }
+        .cube-face {
+            position: absolute;
+            width: 140px;
+            height: 180px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .cube-front {
+            background: linear-gradient(135deg, #6366f1, #4338ca);
+            transform: translateZ(15px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .cube-back {
+            background: #312e81;
+            transform: rotateY(180deg) translateZ(15px);
+        }
+        .cube-right {
+            width: 30px;
+            height: 180px;
+            background: #e2e8f0;
+            transform: rotateY(90deg) translateZ(125px);
+            border-radius: 2px;
+            background-image: linear-gradient(to bottom, #cbd5e1 50%, #f1f5f9 50%);
+            background-size: 100% 8px;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <header class="flex flex-col md:flex-row items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 gap-6">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">A/L Past Paper Tracker</h1>
+                <p class="text-slate-500 mt-1">Track, Edit, and Compare progress. Auto-saves locally.</p>
+            </div>
+            
+            <!-- 3D Interactive Model -->
+            <div class="scene cursor-pointer">
+                <div class="cube">
+                    <div class="cube-face cube-front text-white flex flex-col justify-center items-center gap-2">
+                        <span class="text-4xl">📚</span>
+                        <span class="text-xs font-bold tracking-widest uppercase opacity-80">A/L 2026</span>
+                    </div>
+                    <div class="cube-face cube-back"></div>
+                    <div class="cube-face cube-right"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Segment Switcher Tabs -->
+        <div class="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs mb-8">
+            <button onclick="switchSegment('anu')" id="tab-anu" class="flex-1 py-2.5 text-center font-medium rounded-lg transition-all duration-300 bg-white text-indigo-600 shadow-sm">
+                Anu's Space
+            </button>
+            <button onclick="switchSegment('pooja')" id="tab-pooja" class="flex-1 py-2.5 text-center font-medium rounded-lg transition-all duration-300 text-slate-600 hover:text-slate-900">
+                Pooja's Space
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Side: Data Input Form & History -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Add/Edit Paper Form -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                        <span>📝</span> <span id="form-action-text">Add New Record</span> (<span id="form-title" class="text-indigo-600">Anu</span>)
+                    </h3>
+                    <form id="paperForm" onsubmit="addRecord(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Year</label>
+                            <input type="number" id="year" min="2010" max="2026" placeholder="e.g. 2023" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Part I Marks</label>
+                                <input type="number" id="part1" min="0" max="100" placeholder="Max 100" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Part II Marks</label>
+                                <input type="number" id="part2" min="0" max="100" placeholder="Max 100" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" id="submitBtn" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-xl transition shadow-sm hover:shadow">
+                                Save Record
+                            </button>
+                            <button type="button" id="cancelEditBtn" onclick="cancelEdit()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-4 rounded-xl transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- History Table Area -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-3">Saved Papers</h3>
+                    <div class="overflow-x-auto max-h-72 overflow-y-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-slate-400 font-medium">
+                                    <th class="pb-2">Year</th>
+                                    <th class="pb-2">P I</th>
+                                    <th class="pb-2">P II</th>
+                                    <th class="pb-2">Total</th>
+                                    <th class="pb-2 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable" class="divide-y divide-slate-50 text-slate-600">
+                                <!-- Data injects here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Beautiful Soft Colored Graphs -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Part 1 & Part 2 Progress Graph -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="mb-2">
+                        <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2.5 py-1 rounded-md">Breakdown</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Part I vs Part II Comparison</h3>
+                    <div class="h-72">
+                        <canvas id="breakdownChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Total Marks Graph -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="mb-2">
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded-md">Performance</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Total Marks Final Trend</h3>
+                    <div class="h-72">
+                        <canvas id="totalChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        // Load data from LocalStorage or fallback to default eye-pleasing initial data
+        let store = JSON.parse(localStorage.getItem('al_pastpaper_tracker_data')) || {
+            anu: [
+                { year: 2020, part1: 75, part2: 68 },
+                { year: 2021, part1: 82, part2: 74 },
+                { year: 2022, part1: 88, part2: 81 }
+            ],
+            pooja: [
+                { year: 2020, part1: 68, part2: 72 },
+                { year: 2021, part1: 75, part2: 79 },
+                { year: 2022, part1: 82, part2: 85 }
+            ]
+        };
+
+        let currentSegment = 'anu';
+        let isEditing = false;
+        let breakdownChart, totalChart;
+
+        const colors = {
+            indigo: '#6366f1',
+            indigoLight: '#a5b4fc',
+            emerald: '#10b981',
+            emeraldLight: '#a7f3d0'
+        };
+
+        function saveToLocalStorage() {
+            localStorage.setItem('al_pastpaper_tracker_data', JSON.stringify(store));
+        }
+
+        function initCharts() {
+            const ctx1 = document.getElementById('breakdownChart').getContext('2d');
+            const ctx2 = document.getElementById('totalChart').getContext('2d');
+
+            breakdownChart = new Chart(ctx1, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } },
+                    scales: { y: { max: 100, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+
+            totalChart = new Chart(ctx2, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    tension: 0.3,
+                    scales: { y: { max: 200, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+
+            updateUI();
+        }
+
+        function updateUI() {
+            // Sort records by year ascending
+            store[currentSegment].sort((a, b) => a.year - b.year);
+            const data = store[currentSegment];
+            const labels = data.map(d => d.year);
+
+            document.getElementById('form-title').innerText = currentSegment === 'anu' ? 'Anu' : 'Pooja';
+
+            // 1. Render Table with Edit/Delete Buttons
+            const tableBody = document.getElementById('historyTable');
+            tableBody.innerHTML = '';
+            if(data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">No records saved.</td></tr>`;
+            } else {
+                data.forEach(item => {
+                    const total = item.part1 + item.part2;
+                    tableBody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition group">
+                            <td class="py-3 font-medium text-slate-900">${item.year}</td>
+                            <td class="py-3">${item.part1}</td>
+                            <td class="py-3">${item.part2}</td>
+                            <td class="py-3 font-semibold text-indigo-600">${total}</td>
+                            <td class="py-3 text-right space-x-1 opacity-60 group-hover:opacity-100 transition">
+                                <button onclick="editRecord(${item.year}, ${item.part1}, ${item.part2})" class="text-xs text-slate-600 hover:text-indigo-600 font-medium px-1.5 py-0.5 rounded hover:bg-slate-100">Edit</button>
+                                <button onclick="deleteRecord(${item.year})" class="text-xs text-rose-500 hover:text-rose-700 font-medium px-1.5 py-0.5 rounded hover:bg-rose-50">Del</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // 2. Update Charts
+            breakdownChart.data.labels = labels;
+            breakdownChart.data.datasets = [
+                { label: 'Part I', data: data.map(d => d.part1), backgroundColor: colors.indigoLight, borderRadius: 6 },
+                { label: 'Part II', data: data.map(d => d.part2), backgroundColor: colors.indigo, borderRadius: 6 }
+            ];
+            breakdownChart.update();
+
+            totalChart.data.labels = labels;
+            totalChart.data.datasets = [
+                {
+                    label: 'Total Marks',
+                    data: data.map(d => d.part1 + d.part2),
+                    borderColor: colors.emerald,
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: colors.emerald,
+                    pointRadius: 5
+                }
+            ];
+            totalChart.update();
+        }
+
+        function switchSegment(segment) {
+            if(isEditing) cancelEdit();
+            currentSegment = segment;
+            
+            const tabAnu = document.getElementById('tab-anu');
+            const tabPooja = document.getElementById('tab-pooja');
+
+            if(segment === 'anu') {
+                tabAnu.className = "flex-1 py-2.5 text-center font-medium rounded-lg transition-all duration-300 bg-white text-indigo-600 shadow-sm";
+                tabPooja.className = "flex-1 py-2.5 text-center font-medium rounded-lg transition-all duration-300 text-slate-600 hover:text-slate-900";
+            } else {
+                tabPooja.className = "flex-1 py-2.5 text-center font-medium rounded-lg transition-all duration-300 bg-white text-indigo-600 shadow-sm";
+                tabAnu.className = "flex-1 py-2.5 text-center font-medium rounded-lg transition-all duration-300 text-slate-600 hover:text-slate-900";
+            }
+            updateUI();
+        }
+
+        function addRecord(event) {
+            event.preventDefault();
+            const yearInput = document.getElementById('year');
+            const p1Input = document.getElementById('part1');
+            const p2Input = document.getElementById('part2');
+
+            const newRecord = {
+                year: parseInt(yearInput.value),
+                part1: parseInt(p1Input.value),
+                part2: parseInt(p2Input.value)
+            };
+
+            const existingIndex = store[currentSegment].findIndex(d => d.year === newRecord.year);
+            
+            if(isEditing) {
+                // If editing mode, overwrite the entry
+                if(existingIndex > -1) store[currentSegment][existingIndex] = newRecord;
+                cancelEdit();
+            } else {
+                // Regular adding mode
+                if(existingIndex > -1) {
+                    alert("This year's record already exists! Use the 'Edit' button in the table to modify it.");
+                    return;
+                }
+                store[currentSegment].push(newRecord);
+            }
+
+            yearInput.value = ''; p1Input.value = ''; p2Input.value = '';
+            saveToLocalStorage();
+            updateUI();
+        }
+
+        function editRecord(year, part1, part2) {
+            isEditing = true;
+            document.getElementById('year').value = year;
+            document.getElementById('year').disabled = true; // Block year changing while editing
+            document.getElementById('part1').value = part1;
+            document.getElementById('part2').value = part2;
+            
+            document.getElementById('form-action-text').innerText = "Edit Record";
+            document.getElementById('submitBtn').innerText = "Update Record";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+        }
+
+        function cancelEdit() {
+            isEditing = false;
+            document.getElementById('year').value = '';
+            document.getElementById('year').disabled = false;
+            document.getElementById('part1').value = '';
+            document.getElementById('part2').value = '';
+            
+            document.getElementById('form-action-text').innerText = "Add New Record";
+            document.getElementById('submitBtn').innerText = "Save Record";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function deleteRecord(year) {
+            if(confirm(`Are you sure you want to delete the ${year} record?`)) {
+                store[currentSegment] = store[currentSegment].filter(d => d.year !== year);
+                if(isEditing && document.getElementById('year').value == year) cancelEdit();
+                saveToLocalStorage();
+                updateUI();
+            }
+        }
+
+        window.onload = initCharts;
+    </script>
+</body>
+</html>
